@@ -2,41 +2,57 @@ import { z } from 'zod';
 
 // Step 1: Basic Info
 export const basicInfoSchema = z.object({
-  age: z.coerce.number().min(16).max(100),
+  age: z.coerce
+    .number()
+    .int('Age must be a whole number')
+    .min(16, 'You must be at least 16 years old')
+    .max(100, 'Please enter a valid age'),
   studentMode: z.boolean().default(false),
-  occupation: z.string().min(2, 'Occupation is required'),
+  occupation: z.string().min(2, 'Occupation is required (at least 2 characters)'),
 });
 
 // Step 2: Income
 export const incomeSchema = z.object({
-  monthlyIncome: z.coerce.number().min(0),
+  monthlyIncome: z.coerce
+    .number()
+    .min(0, 'Monthly income cannot be negative'),
+  additionalIncome: z.coerce
+    .number()
+    .min(0, 'Additional income cannot be negative')
+    .default(0),
   incomeType: z.enum(['SALARY', 'STIPEND', 'ALLOWANCE', 'FREELANCE', 'PART_TIME', 'OTHER']),
 });
 
 // Step 3: Expenses (Monthly)
 export const expensesSchema = z.object({
-  housing: z.coerce.number().min(0).default(0),
-  food: z.coerce.number().min(0).default(0),
-  transportation: z.coerce.number().min(0).default(0),
-  subscriptions: z.coerce.number().min(0).default(0),
-  education: z.coerce.number().min(0).default(0),
-  entertainment: z.coerce.number().min(0).default(0),
-  other: z.coerce.number().min(0).default(0),
+  housing: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  food: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  transportation: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  subscriptions: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  education: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  entertainment: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  other: z.coerce.number().min(0, 'Cannot be negative').default(0),
 });
 
 // Step 4: Financial Position
 export const financialPositionSchema = z.object({
-  bankBalance: z.coerce.number().min(0).default(0),
-  investments: z.coerce.number().min(0).default(0),
-  savings: z.coerce.number().min(0).default(0),
-  liabilities: z.coerce.number().min(0).default(0), // Total debt
+  bankBalance: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  investments: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  savings: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  assets: z.coerce.number().min(0, 'Cannot be negative').default(0),
+  liabilities: z.coerce.number().min(0, 'Cannot be negative').default(0),
 });
 
 // Step 5: Initial Goal
 export const initialGoalSchema = z.object({
   goalName: z.string().min(2, 'Goal name is required'),
-  targetAmount: z.coerce.number().min(1),
-  currentAmount: z.coerce.number().min(0).default(0),
+  targetAmount: z.coerce
+    .number()
+    .min(1, 'Target amount must be at least ₹1'),
+  currentAmount: z.coerce
+    .number()
+    .min(0, 'Current amount cannot be negative')
+    .default(0),
 });
 
 // Step 6: Risk Quiz

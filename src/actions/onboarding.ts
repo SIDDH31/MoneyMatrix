@@ -30,14 +30,17 @@ export async function submitOnboarding(data: OnboardingData) {
   try {
     // Wrap everything in a Prisma transaction
     await prisma.$transaction(async (tx) => {
-      // 1. Create Profile
+      // 1. Create Profile (now includes age, occupation, additionalIncome)
       await tx.profile.create({
         data: {
           userId,
+          age: basicInfo.age,
+          occupation: basicInfo.occupation,
           studentMode: basicInfo.studentMode,
           monthlyIncome: income.monthlyIncome,
+          additionalIncome: income.additionalIncome,
           incomeType: income.incomeType,
-          currency: 'INR', // Default for now
+          currency: 'INR',
         }
       });
 
@@ -62,6 +65,11 @@ export async function submitOnboarding(data: OnboardingData) {
       if (financialPosition.savings > 0) {
         await tx.asset.create({
           data: { userId, name: 'Savings', category: AssetCategory.CASH_EQUIVALENT, value: financialPosition.savings }
+        });
+      }
+      if (financialPosition.assets > 0) {
+        await tx.asset.create({
+          data: { userId, name: 'Other Assets', category: AssetCategory.OTHER, value: financialPosition.assets }
         });
       }
       if (financialPosition.liabilities > 0) {

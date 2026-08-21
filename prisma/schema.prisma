@@ -104,12 +104,17 @@ model Profile {
   userId   String @unique
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Basic info from onboarding
+  age         Int?
+  occupation  String?
+
   currency    String  @default("INR")
   studentMode Boolean @default(false)
 
   // Income context — helps AI provide relevant advice
-  incomeType  IncomeType @default(SALARY)
-  monthlyIncome Float?
+  incomeType      IncomeType @default(SALARY)
+  monthlyIncome   Float?
+  additionalIncome Float?
 
   // Preferences
   categories Json? // custom category overrides

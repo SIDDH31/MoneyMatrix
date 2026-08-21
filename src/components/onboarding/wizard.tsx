@@ -17,13 +17,23 @@ import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const STEPS = [
-  { id: 'basic', title: 'Basic Info' },
-  { id: 'income', title: 'Income' },
-  { id: 'expenses', title: 'Expenses' },
-  { id: 'financial', title: 'Financial Position' },
-  { id: 'goal', title: 'Initial Goal' },
-  { id: 'risk', title: 'Risk Profile' },
+  { id: 'basic', title: 'Basic Info', description: 'Tell us about yourself' },
+  { id: 'income', title: 'Income', description: 'Your earnings overview' },
+  { id: 'expenses', title: 'Expenses', description: 'Monthly spending breakdown' },
+  { id: 'financial', title: 'Financial Position', description: 'Your current financial standing' },
+  { id: 'goal', title: 'Initial Goal', description: 'Set your first financial target' },
+  { id: 'risk', title: 'Risk Profile', description: 'Understand your risk tolerance' },
 ];
+
+// Map step index to the form field paths that need validation
+const STEP_FIELDS: Record<number, string[]> = {
+  0: ['basicInfo.age', 'basicInfo.occupation', 'basicInfo.studentMode'],
+  1: ['income.monthlyIncome', 'income.additionalIncome', 'income.incomeType'],
+  2: ['expenses.housing', 'expenses.food', 'expenses.transportation', 'expenses.subscriptions', 'expenses.education', 'expenses.entertainment', 'expenses.other'],
+  3: ['financialPosition.bankBalance', 'financialPosition.investments', 'financialPosition.savings', 'financialPosition.assets', 'financialPosition.liabilities'],
+  4: ['initialGoal.goalName', 'initialGoal.targetAmount', 'initialGoal.currentAmount'],
+  5: ['riskQuiz.reactionToDrop', 'riskQuiz.timeHorizon', 'riskQuiz.primaryObjective'],
+};
 
 export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -36,9 +46,9 @@ export function OnboardingWizard() {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       basicInfo: { age: 25, studentMode: false, occupation: '' },
-      income: { monthlyIncome: 0, incomeType: 'SALARY' },
+      income: { monthlyIncome: 0, additionalIncome: 0, incomeType: 'SALARY' },
       expenses: { housing: 0, food: 0, transportation: 0, subscriptions: 0, education: 0, entertainment: 0, other: 0 },
-      financialPosition: { bankBalance: 0, investments: 0, savings: 0, liabilities: 0 },
+      financialPosition: { bankBalance: 0, investments: 0, savings: 0, assets: 0, liabilities: 0 },
       initialGoal: { goalName: 'Emergency Fund', targetAmount: 100000, currentAmount: 0 },
       riskQuiz: { reactionToDrop: 'do_nothing', timeHorizon: '3_to_7', primaryObjective: 'growth' },
     },
@@ -46,17 +56,12 @@ export function OnboardingWizard() {
   });
 
   const nextStep = async () => {
-    // Validate current step fields before moving on
-    let fieldsToValidate: string[] = [];
-    if (currentStep === 0) fieldsToValidate = ['basicInfo.age', 'basicInfo.occupation'];
-    if (currentStep === 1) fieldsToValidate = ['income.monthlyIncome'];
-    if (currentStep === 2) fieldsToValidate = ['expenses.housing', 'expenses.food'];
-    // Add more granular validation logic if needed
-    
-    // We'll just force a re-render and let zod handle it, but for a simple wizard, 
-    // we can just proceed and let the final submit catch it, or validate chunks.
-    // For this prototype, we'll validate the whole form at the end to avoid blocking, 
-    // but ideally we'd trigger validation on the specific sub-schema.
+    // Validate current step fields before advancing
+    const fields = STEP_FIELDS[currentStep];
+    if (fields) {
+      const isValid = await form.trigger(fields as any);
+      if (!isValid) return; // Don't advance if validation fails
+    }
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
   };
 
@@ -79,7 +84,10 @@ export function OnboardingWizard() {
     <Card className="w-full shadow-lg border-border">
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
-          <CardTitle className="text-xl">{STEPS[currentStep].title}</CardTitle>
+          <div>
+            <CardTitle className="text-xl">{STEPS[currentStep].title}</CardTitle>
+            <CardDescription className="mt-1">{STEPS[currentStep].description}</CardDescription>
+          </div>
           <span className="text-sm text-muted-foreground">Step {currentStep + 1} of {STEPS.length}</span>
         </div>
         <Progress value={progress} className="h-2" />
@@ -95,7 +103,7 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="basicInfo.age" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>Age</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" placeholder="e.g. 22" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -126,7 +134,15 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="income.monthlyIncome" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>Average Monthly Income (₹)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" placeholder="e.g. 50000" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="income.additionalIncome" render={({ field }: any) => (
+                  <FormItem>
+                    <FormLabel>Additional Monthly Income (₹)</FormLabel>
+                    <FormDescription>Freelance, side projects, rental income, etc.</FormDescription>
+                    <FormControl><Input type="number" placeholder="e.g. 10000" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -154,23 +170,34 @@ export function OnboardingWizard() {
 
             {/* STEP 2: EXPENSES */}
             {currentStep === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-full mb-2">
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <div className="mb-2">
                   <h3 className="text-sm font-medium">Estimated Monthly Expenses (₹)</h3>
                   <p className="text-xs text-muted-foreground">It's okay to estimate for now.</p>
                 </div>
-                <FormField control={form.control} name="expenses.housing" render={({ field }: any) => (
-                  <FormItem><FormLabel>Housing / Rent</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                )} />
-                <FormField control={form.control} name="expenses.food" render={({ field }: any) => (
-                  <FormItem><FormLabel>Food & Groceries</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                )} />
-                <FormField control={form.control} name="expenses.transportation" render={({ field }: any) => (
-                  <FormItem><FormLabel>Transportation</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                )} />
-                <FormField control={form.control} name="expenses.subscriptions" render={({ field }: any) => (
-                  <FormItem><FormLabel>Subscriptions</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="expenses.housing" render={({ field }: any) => (
+                    <FormItem><FormLabel>Housing / Rent</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.food" render={({ field }: any) => (
+                    <FormItem><FormLabel>Food & Groceries</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.transportation" render={({ field }: any) => (
+                    <FormItem><FormLabel>Transportation</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.subscriptions" render={({ field }: any) => (
+                    <FormItem><FormLabel>Subscriptions</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.education" render={({ field }: any) => (
+                    <FormItem><FormLabel>Education</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.entertainment" render={({ field }: any) => (
+                    <FormItem><FormLabel>Entertainment</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="expenses.other" render={({ field }: any) => (
+                    <FormItem><FormLabel>Other Expenses</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
               </div>
             )}
 
@@ -178,13 +205,19 @@ export function OnboardingWizard() {
             {currentStep === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                  <FormField control={form.control} name="financialPosition.bankBalance" render={({ field }: any) => (
-                  <FormItem><FormLabel>Total Bank Balance (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>Total Bank Balance (₹)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="financialPosition.savings" render={({ field }: any) => (
+                  <FormItem><FormLabel>Savings (₹)</FormLabel><FormDescription>Fixed deposits, recurring deposits, etc.</FormDescription><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="financialPosition.investments" render={({ field }: any) => (
-                  <FormItem><FormLabel>Total Investments (Stocks, Mutual Funds, etc.)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>Investments (₹)</FormLabel><FormDescription>Stocks, mutual funds, crypto, etc.</FormDescription><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                 <FormField control={form.control} name="financialPosition.assets" render={({ field }: any) => (
+                  <FormItem><FormLabel>Other Assets (₹)</FormLabel><FormDescription>Property, vehicles, electronics, jewelry, etc.</FormDescription><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="financialPosition.liabilities" render={({ field }: any) => (
-                  <FormItem><FormLabel>Total Liabilities (Loans, Credit Debt)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>Total Liabilities (₹)</FormLabel><FormDescription>Loans, credit card debt, etc.</FormDescription><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
             )}
@@ -193,13 +226,13 @@ export function OnboardingWizard() {
             {currentStep === 4 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <FormField control={form.control} name="initialGoal.goalName" render={({ field }: any) => (
-                  <FormItem><FormLabel>What is your primary financial goal?</FormLabel><FormControl><Input placeholder="e.g. Emergency Fund, New Laptop" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>What is your primary financial goal?</FormLabel><FormControl><Input placeholder="e.g. Emergency Fund, New Laptop" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="initialGoal.targetAmount" render={({ field }: any) => (
-                  <FormItem><FormLabel>Target Amount (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>Target Amount (₹)</FormLabel><FormControl><Input type="number" placeholder="e.g. 100000" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="initialGoal.currentAmount" render={({ field }: any) => (
-                  <FormItem><FormLabel>Current Amount Saved (₹)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  <FormItem><FormLabel>Current Amount Saved (₹)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
             )}
