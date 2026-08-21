@@ -25,11 +25,44 @@ const navItems = [
 interface SidebarProps {
   userName: string | null;
   userEmail: string | null;
+  studentMode: boolean;
 }
 
-export function Sidebar({ userName, userEmail }: SidebarProps) {
+import { GraduationCap, Briefcase } from 'lucide-react';
+import { toggleStudentMode } from '@/actions/profile';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useRouter } from 'next/navigation';
+
+export function Sidebar({ userName, userEmail, studentMode }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  const handleToggle = async (checked: boolean) => {
+    setIsPending(true);
+    await toggleStudentMode(checked);
+    setIsPending(false);
+    if (checked) {
+      router.push('/student');
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
+  const currentNavItems = studentMode 
+    ? [
+        { href: '/student', label: 'Overview', icon: LayoutDashboard },
+        { href: '/dashboard/goals', label: 'Goals', icon: Target, comingSoon: true },
+      ]
+    : [
+        { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+        { href: '/investments', label: 'Investments', icon: Briefcase },
+        { href: '/dashboard/goals', label: 'Goals', icon: Target, comingSoon: true },
+        { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight, comingSoon: true },
+        { href: '/dashboard/settings', label: 'Settings', icon: Settings, comingSoon: true },
+      ];
 
   return (
     <>
@@ -69,7 +102,7 @@ export function Sidebar({ userName, userEmail }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
+          {currentNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
@@ -96,6 +129,22 @@ export function Sidebar({ userName, userEmail }: SidebarProps) {
             );
           })}
         </nav>
+
+        {/* Student Mode Toggle */}
+        <div className="px-4 py-4 border-t">
+          <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <Label htmlFor="student-mode" className="text-sm cursor-pointer">Student Mode</Label>
+            </div>
+            <Switch 
+              id="student-mode" 
+              checked={studentMode} 
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+          </div>
+        </div>
 
         {/* User info */}
         <div className="px-4 py-4 border-t">

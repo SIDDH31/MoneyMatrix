@@ -22,6 +22,8 @@ function formatDate(): string {
   });
 }
 
+import { ModeToggle } from '@/components/mode-toggle';
+
 export function DashboardHeader({ userName }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -32,6 +34,7 @@ export function DashboardHeader({ userName }: DashboardHeaderProps) {
         <p className="text-muted-foreground mt-1">{formatDate()}</p>
       </div>
       <div className="flex items-center gap-2">
+        <ModeToggle />
         <Button variant="outline" size="icon-sm" className="relative" aria-label="Notifications">
           <Bell className="h-4 w-4" />
           <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border-2 border-card" />

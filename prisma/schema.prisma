@@ -344,10 +344,11 @@ model Asset {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name     String
-  category AssetCategory
-  value    Float
-  notes    String?
+  name           String
+  category       AssetCategory
+  value          Float
+  investedAmount Float? // Added for investment tracking
+  notes          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
