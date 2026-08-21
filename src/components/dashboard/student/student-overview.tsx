@@ -1,6 +1,11 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PiggyBank, ReceiptText, ArrowUpCircle, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '@/components/providers/currency-provider';
+import { formatCurrency } from '@/lib/financial-engine';
+import { motion } from 'motion/react';
 
 interface StudentOverviewProps {
   monthlyIncome: number;
@@ -10,48 +15,55 @@ interface StudentOverviewProps {
 }
 
 export function StudentOverview({ monthlyIncome, monthlyExpenses, totalSavings, savingsRate }: StudentOverviewProps) {
+  const { currency } = useCurrency();
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+    >
+      <Card className="glass-card bg-card/70 backdrop-blur-md border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Monthly Allowance/Income</CardTitle>
           <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${monthlyIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            {formatCurrency(monthlyIncome, currency)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Total incoming cash</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-card bg-card/70 backdrop-blur-md border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Monthly Expenses</CardTitle>
           <ReceiptText className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${monthlyExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            {formatCurrency(monthlyExpenses, currency)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Total outgoing cash</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-card bg-card/70 backdrop-blur-md border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Savings</CardTitle>
           <PiggyBank className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-primary">
-            ${totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            {formatCurrency(totalSavings, currency)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Bank balances + cash</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-card bg-card/70 backdrop-blur-md border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Savings Rate</CardTitle>
           <Percent className="h-4 w-4 text-muted-foreground" />
@@ -63,9 +75,9 @@ export function StudentOverview({ monthlyIncome, monthlyExpenses, totalSavings, 
           )}>
             {savingsRate.toFixed(1)}%
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Of your monthly income</p>
+          <p className="text-xs text-muted-foreground mt-1">Target: &gt; 20%</p>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }

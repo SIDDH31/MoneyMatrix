@@ -24,3 +24,24 @@ export async function toggleStudentMode(enabled: boolean) {
     return { error: 'Failed to update settings.' };
   }
 }
+
+export async function updateCurrencyPreference(currency: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { error: 'Unauthorized' };
+    }
+
+    await prisma.profile.update({
+      where: { userId: session.user.id },
+      data: { currency },
+    });
+
+    revalidatePath('/', 'layout');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating currency:', error);
+    throw new Error('Failed to update currency');
+  }
+}

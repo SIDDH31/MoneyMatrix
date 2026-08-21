@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Loader2 } from 'lucide-react';
 import { AssetCategory } from '@prisma/client';
 import { addAsset } from '@/actions/investments';
+import { useCurrency } from '@/components/providers/currency-provider';
 
 export function AddAssetModal() {
+  const { currency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState('');
@@ -34,11 +36,9 @@ export function AddAssetModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Investment
-        </Button>
+      <DialogTrigger render={<Button className="gap-2" />}>
+        <Plus className="h-4 w-4" />
+        Add Investment
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -69,12 +69,12 @@ export function AddAssetModal() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="investedAmount">Total Invested Amount ($)</Label>
+            <Label htmlFor="investedAmount">Total Invested Amount ({currency === 'USD' ? '$' : '₹'})</Label>
             <Input id="investedAmount" name="investedAmount" type="number" step="0.01" min="0" placeholder="0.00" required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="currentValue">Current Market Value ($)</Label>
+            <Label htmlFor="currentValue">Current Market Value ({currency === 'USD' ? '$' : '₹'})</Label>
             <Input id="currentValue" name="currentValue" type="number" step="0.01" min="0" placeholder="0.00" required />
           </div>
 

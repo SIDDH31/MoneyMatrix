@@ -14,14 +14,19 @@ import { ChatInterface } from './chat-interface';
 export function AIAdvisorSheet() {
   return (
     <Sheet>
-      <SheetTrigger>
-        <Button
-          size="lg"
-          className="fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 pr-6 z-50 animate-in fade-in slide-in-from-bottom-5"
-        >
-          <BotMessageSquare className="w-6 h-6" />
-          <span className="font-medium">Ask AI Advisor</span>
-        </Button>
+      <SheetTrigger
+        render={
+          <Button
+            size="lg"
+            className="group fixed bottom-6 right-6 h-14 rounded-full shadow-lg gap-2 pr-6 z-50 animate-in fade-in slide-in-from-bottom-5 hover:scale-105 transition-transform duration-300"
+          />
+        }
+      >
+        <div className="relative flex items-center justify-center">
+          <BotMessageSquare className="w-6 h-6 relative z-10" />
+          <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" style={{ animationDuration: '3s' }} />
+        </div>
+        <span className="font-medium">Ask AI Advisor</span>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md p-0 border-l bg-background">
         <SheetHeader className="p-4 border-b sr-only">

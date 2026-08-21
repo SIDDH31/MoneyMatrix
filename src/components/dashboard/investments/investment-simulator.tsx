@@ -4,10 +4,13 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useCurrency } from '@/components/providers/currency-provider';
+import { formatCurrency, formatCompact } from '@/lib/financial-engine';
+import { motion } from 'motion/react';
 
 export function InvestmentSimulator() {
+  const { currency } = useCurrency();
   const [initialInvestment, setInitialInvestment] = useState(10000);
   const [monthlyContribution, setMonthlyContribution] = useState(500);
   const [expectedReturn, setExpectedReturn] = useState(8);
@@ -52,19 +55,24 @@ export function InvestmentSimulator() {
   const estimatedReturns = finalValue - finalInvested;
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Investment Simulator</CardTitle>
-        <CardDescription>Visualize the power of compound interest over time.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.4 }}
+    >
+      <Card className="h-full flex flex-col glass-card bg-card/70 backdrop-blur-md border-border/50">
+        <CardHeader>
+          <CardTitle>Investment Simulator</CardTitle>
+          <CardDescription>Visualize the power of compound interest over time.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col gap-6">
         
         {/* Controls */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label>Initial Investment</Label>
-              <span className="text-sm font-medium">${initialInvestment.toLocaleString()}</span>
+              <span className="text-sm font-medium">{formatCurrency(initialInvestment, currency)}</span>
             </div>
             <Slider 
               value={[initialInvestment]} 
@@ -78,7 +86,7 @@ export function InvestmentSimulator() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label>Monthly Contribution</Label>
-              <span className="text-sm font-medium">${monthlyContribution.toLocaleString()}</span>
+              <span className="text-sm font-medium">{formatCurrency(monthlyContribution, currency)}</span>
             </div>
             <Slider 
               value={[monthlyContribution]} 
@@ -122,15 +130,15 @@ export function InvestmentSimulator() {
         <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg border">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Total Invested</p>
-            <p className="text-lg font-semibold">${finalInvested.toLocaleString()}</p>
+            <p className="text-lg font-semibold">{formatCurrency(finalInvested, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Est. Returns</p>
-            <p className="text-lg font-semibold text-emerald-500">+${estimatedReturns.toLocaleString()}</p>
+            <p className="text-lg font-semibold text-emerald-500">+{formatCurrency(estimatedReturns, currency)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Final Value</p>
-            <p className="text-lg font-bold text-primary">${finalValue.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">{formatCurrency(finalValue, currency)}</p>
           </div>
         </div>
 
@@ -154,11 +162,11 @@ export function InvestmentSimulator() {
                 axisLine={false} 
                 tickLine={false} 
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                tickFormatter={(val) => formatCompact(val, currency)}
                 width={60}
               />
               <Tooltip 
-                formatter={(value: any) => `$${Number(value).toLocaleString()}`}
+                formatter={(value: any) => [formatCurrency(Number(value), currency), '']}
                 contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))' }}
               />
               <Area 
@@ -188,5 +196,6 @@ export function InvestmentSimulator() {
         </p>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

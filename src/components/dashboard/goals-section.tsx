@@ -1,9 +1,13 @@
+"use client";
+
+import { motion } from "motion/react";
 import {
   formatCurrency,
   calculateGoalProgress,
   calculateProjectedCompletion,
 } from '@/lib/financial-engine';
 import { Target, TrendingUp, Calendar, CheckCircle2 } from 'lucide-react';
+import { useCurrency } from '@/components/providers/currency-provider';
 
 interface Goal {
   id: string;
@@ -37,11 +41,17 @@ function getProgressColor(progress: number) {
 }
 
 export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps) {
+  const { currency } = useCurrency();
   const activeGoals = goals.filter((g) => g.status === 'ACTIVE');
 
   if (activeGoals.length === 0) {
     return (
-      <div className="border rounded-xl bg-card p-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="glass-card rounded-xl p-6"
+      >
         <div className="flex items-center gap-2 mb-4">
           <Target className="h-5 w-5 text-primary" />
           <h3 className="text-base font-medium">Financial Goals</h3>
@@ -54,12 +64,17 @@ export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps
             No active goals. Set financial targets to track your progress.
           </p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="border rounded-xl bg-card p-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      className="glass-card rounded-xl p-6"
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
@@ -95,7 +110,7 @@ export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {formatCurrency(goal.currentAmount)} of {formatCurrency(goal.targetAmount)}
+                    {formatCurrency(goal.currentAmount, currency)} of {formatCurrency(goal.targetAmount, currency)}
                   </p>
                 </div>
                 <span className="text-lg font-bold tabular-nums">
@@ -115,7 +130,7 @@ export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps
               <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  <span>Remaining: {formatCurrency(remaining)}</span>
+                  <span>Remaining: {formatCurrency(remaining, currency)}</span>
                 </div>
                 {projected && (
                   <div className="flex items-center gap-1">
@@ -144,6 +159,6 @@ export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -12,6 +12,9 @@ import {
 } from 'recharts';
 import { formatCompact } from '@/lib/financial-engine';
 
+import { useCurrency } from '@/components/providers/currency-provider';
+import { motion } from 'motion/react';
+
 interface CashFlowChartProps {
   monthlyIncome: number;
   monthlyExpenses: number;
@@ -21,6 +24,7 @@ export function CashFlowChart({
   monthlyIncome,
   monthlyExpenses,
 }: CashFlowChartProps) {
+  const { currency } = useCurrency();
   const monthlySavings = Math.max(0, monthlyIncome - monthlyExpenses);
 
   // Generate simulated monthly data based on current values
@@ -41,17 +45,27 @@ export function CashFlowChart({
 
   if (monthlyIncome === 0 && monthlyExpenses === 0) {
     return (
-      <div className="border rounded-xl bg-card p-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="glass-card rounded-xl p-6"
+      >
         <h3 className="text-base font-medium mb-2">Cash Flow</h3>
         <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
           No income or expense data available yet.
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="border rounded-xl bg-card p-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      className="glass-card rounded-xl p-6"
+    >
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-medium">Cash Flow</h3>
@@ -97,13 +111,13 @@ export function CashFlowChart({
             tickLine={false}
           />
           <YAxis
-            tickFormatter={(v) => formatCompact(v)}
+            tickFormatter={(v) => formatCompact(v, currency)}
             tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip
-            formatter={(value: any, name: any) => [formatCompact(value), name]}
+            formatter={(value: any, name: any) => [formatCompact(value, currency), name]}
             contentStyle={{
               backgroundColor: 'var(--popover)',
               border: '1px solid var(--border)',
@@ -134,6 +148,6 @@ export function CashFlowChart({
           />
         </AreaChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 }

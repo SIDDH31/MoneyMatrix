@@ -8,6 +8,8 @@ import {
   Tooltip,
 } from 'recharts';
 import { formatCurrency } from '@/lib/financial-engine';
+import { useCurrency } from '@/components/providers/currency-provider';
+import { motion } from 'motion/react';
 
 interface ExpenseAnalysisProps {
   budgets: { category: string; limit: number }[];
@@ -24,14 +26,21 @@ const COLORS = [
 ];
 
 export function ExpenseAnalysis({ budgets }: ExpenseAnalysisProps) {
+  const { currency } = useCurrency();
+
   if (budgets.length === 0) {
     return (
-      <div className="border rounded-xl bg-card p-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="glass-card rounded-xl p-6"
+      >
         <h3 className="text-base font-medium mb-2">Expense Breakdown</h3>
         <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
           No expense categories set up yet.
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -45,11 +54,16 @@ export function ExpenseAnalysis({ budgets }: ExpenseAnalysisProps) {
   }));
 
   return (
-    <div className="border rounded-xl bg-card p-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.4 }}
+      className="glass-card rounded-xl p-6"
+    >
       <div className="mb-4">
         <h3 className="text-base font-medium">Expense Breakdown</h3>
         <p className="text-sm text-muted-foreground">
-          Monthly total: {formatCurrency(totalExpenses)}
+          Monthly total: {formatCurrency(totalExpenses, currency)}
         </p>
       </div>
 
@@ -61,18 +75,18 @@ export function ExpenseAnalysis({ budgets }: ExpenseAnalysisProps) {
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={3}
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={2}
               dataKey="value"
               stroke="none"
             >
-              {pieData.map((_, index) => (
+              {pieData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: any) => [formatCurrency(value), '']}
+              formatter={(value: any) => [formatCurrency(value, currency), '']}
               contentStyle={{
                 backgroundColor: 'var(--popover)',
                 border: '1px solid var(--border)',

@@ -145,3 +145,24 @@
     @apply font-sans antialiased;
   }
 }
+
+@layer utilities {
+  .bg-mesh {
+    background-color: var(--background);
+    background-image: 
+      radial-gradient(at 0% 0%, color-mix(in srgb, var(--primary) 10%, transparent) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, color-mix(in srgb, var(--chart-2) 10%, transparent) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, color-mix(in srgb, var(--chart-1) 10%, transparent) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, color-mix(in srgb, var(--chart-3) 10%, transparent) 0px, transparent 50%);
+    background-size: 100% 100%;
+    background-attachment: fixed;
+  }
+  
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-md border-border/50 shadow-sm transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply bg-card/90 shadow-md border-primary/20;
+  }
+}

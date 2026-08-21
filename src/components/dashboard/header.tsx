@@ -23,6 +23,7 @@ function formatDate(): string {
 }
 
 import { ModeToggle } from '@/components/mode-toggle';
+import { CurrencyToggle } from '@/components/dashboard/currency-toggle';
 
 export function DashboardHeader({ userName }: DashboardHeaderProps) {
   return (
@@ -34,6 +35,7 @@ export function DashboardHeader({ userName }: DashboardHeaderProps) {
         <p className="text-muted-foreground mt-1">{formatDate()}</p>
       </div>
       <div className="flex items-center gap-2">
+        <CurrencyToggle />
         <ModeToggle />
         <Button variant="outline" size="icon-sm" className="relative" aria-label="Notifications">
           <Bell className="h-4 w-4" />

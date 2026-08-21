@@ -37,6 +37,8 @@ function getScoreRingColor(score: number): string {
   return 'stroke-red-500';
 }
 
+import { motion } from 'motion/react';
+
 export function HealthScoreDisplay({ result }: HealthScoreDisplayProps) {
   const { score, grade, gradeColor, factors } = result;
 
@@ -48,7 +50,12 @@ export function HealthScoreDisplay({ result }: HealthScoreDisplayProps) {
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="border rounded-xl bg-card p-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.5 }}
+      className="glass-card rounded-xl p-6"
+    >
       <div className="flex items-center gap-2 mb-6">
         <Shield className="h-5 w-5 text-primary" />
         <h3 className="text-base font-medium">Financial Health Score</h3>
@@ -112,6 +119,6 @@ export function HealthScoreDisplay({ result }: HealthScoreDisplayProps) {
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
