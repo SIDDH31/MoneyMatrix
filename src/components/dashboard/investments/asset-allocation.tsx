@@ -76,5 +76,6 @@ export function AssetAllocation({ analytics }: { analytics: PortfolioSummary }) 
           </ResponsiveContainer>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

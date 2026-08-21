@@ -111,6 +111,6 @@ export function NetWorthChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 }

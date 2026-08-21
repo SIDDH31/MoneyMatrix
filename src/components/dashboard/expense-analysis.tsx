@@ -132,6 +132,6 @@ export function ExpenseAnalysis({ budgets }: ExpenseAnalysisProps) {
           })}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
