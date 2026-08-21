@@ -1,0 +1,464 @@
+// =============================================================================
+// MoneyMatrix — Prisma Schema
+// =============================================================================
+// Models: User, Profile, Account, Transaction, Budget, Goal, Investment,
+//         Portfolio, Asset, Liability, RiskProfile, AIInsight, AIConversation
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Authentication Models (Auth.js v5 compatible)
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String? // null for OAuth-only users
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Auth.js relations
+  accounts      AuthAccount[]
+  sessions      Session[]
+
+  // Application relations
+  profile         Profile?
+  bankAccounts    BankAccount[]
+  transactions    Transaction[]
+  budgets         Budget[]
+  goals           FinancialGoal[]
+  investments     Investment[]
+  portfolios      Portfolio[]
+  assets          Asset[]
+  liabilities     Liability[]
+  riskProfile     RiskProfile?
+  aiInsights      AIInsight[]
+  aiConversations AIConversation[]
+
+  @@map("users")
+}
+
+// Auth.js requires these exact model shapes
+model AuthAccount {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@map("auth_accounts")
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =============================================================================
+// User Profile
+// =============================================================================
+
+model Profile {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  currency    String  @default("INR")
+  studentMode Boolean @default(false)
+
+  // Income context — helps AI provide relevant advice
+  incomeType  IncomeType @default(SALARY)
+  monthlyIncome Float?
+
+  // Preferences
+  categories Json? // custom category overrides
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+enum IncomeType {
+  SALARY
+  STIPEND
+  ALLOWANCE
+  FREELANCE
+  PART_TIME
+  OTHER
+}
+
+// =============================================================================
+// Financial Accounts (bank accounts, wallets, credit cards, etc.)
+// =============================================================================
+
+model BankAccount {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  type        AccountType
+  balance     Float       @default(0)
+  currency    String      @default("INR")
+  institution String?
+  isActive    Boolean     @default(true)
+
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("bank_accounts")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  CASH
+  WALLET
+  OTHER
+}
+
+// =============================================================================
+// Transactions (income, expense, transfer)
+// =============================================================================
+
+model Transaction {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId String?
+  account   BankAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  amount      Float
+  type        TransactionType
+  category    String
+  subcategory String?
+  description String?
+  date        DateTime @default(now())
+
+  isRecurring        Boolean @default(false)
+  recurringFrequency RecurringFrequency?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([userId, category])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// =============================================================================
+// Budget
+// =============================================================================
+
+model Budget {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category String
+  limit    Float
+  period   BudgetPeriod @default(MONTHLY)
+  isActive Boolean      @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category, period])
+  @@map("budgets")
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+// =============================================================================
+// Financial Goals
+// =============================================================================
+
+model FinancialGoal {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime?
+  priority      GoalPriority @default(MEDIUM)
+  status        GoalStatus   @default(ACTIVE)
+  icon          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@map("financial_goals")
+}
+
+enum GoalPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+// =============================================================================
+// Investment & Portfolio
+// =============================================================================
+
+model Portfolio {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  investments Investment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model Investment {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolioId String?
+  portfolio   Portfolio? @relation(fields: [portfolioId], references: [id], onDelete: SetNull)
+
+  name         String
+  type         InvestmentType
+  units        Float       @default(0)
+  buyPrice     Float
+  currentPrice Float
+  purchaseDate DateTime    @default(now())
+  sector       String?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, type])
+  @@map("investments")
+}
+
+enum InvestmentType {
+  STOCK
+  MUTUAL_FUND
+  ETF
+  BOND
+  FIXED_DEPOSIT
+  CRYPTO
+  GOLD
+  REAL_ESTATE
+  OTHER
+}
+
+// =============================================================================
+// Assets & Liabilities (for net worth calculation)
+// =============================================================================
+
+model Asset {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  category AssetCategory
+  value    Float
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("assets")
+}
+
+enum AssetCategory {
+  CASH_EQUIVALENT
+  INVESTMENT
+  PROPERTY
+  VEHICLE
+  ELECTRONICS
+  JEWELRY
+  OTHER
+}
+
+model Liability {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  category     LiabilityCategory
+  amount       Float
+  interestRate Float?
+  dueDate      DateTime?
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("liabilities")
+}
+
+enum LiabilityCategory {
+  STUDENT_LOAN
+  PERSONAL_LOAN
+  CREDIT_CARD_DEBT
+  MORTGAGE
+  AUTO_LOAN
+  OTHER
+}
+
+// =============================================================================
+// Risk Profile
+// =============================================================================
+
+model RiskProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  riskTolerance RiskTolerance @default(MODERATE)
+  investmentHorizon String?   // e.g., "5-10 years"
+  answers       Json?         // raw questionnaire responses
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("risk_profiles")
+}
+
+enum RiskTolerance {
+  CONSERVATIVE
+  MODERATELY_CONSERVATIVE
+  MODERATE
+  MODERATELY_AGGRESSIVE
+  AGGRESSIVE
+}
+
+// =============================================================================
+// AI Models
+// =============================================================================
+
+model AIInsight {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    InsightType
+  title   String
+  content String
+  data    Json? // structured data the insight was derived from
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, type])
+  @@map("ai_insights")
+}
+
+enum InsightType {
+  SPENDING_PATTERN
+  SAVINGS_TIP
+  INVESTMENT_SUGGESTION
+  GOAL_PROGRESS
+  BUDGET_ALERT
+  MARKET_INSIGHT
+  EDUCATIONAL
+}
+
+model AIConversation {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title    String?
+  messages Json // Array of { role, content, timestamp }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("ai_conversations")
+}
