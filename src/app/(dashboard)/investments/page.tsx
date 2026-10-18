@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Asset, FinancialGoal } from '@/lib/models';
 import { redirect } from 'next/navigation';
 import { analyzePortfolio } from '@/lib/financial-engine/portfolio-analytics';
 import { InvestmentOverview } from '@/components/dashboard/investments/investment-overview';
@@ -17,27 +18,33 @@ export default async function InvestmentsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
+  await connectDB();
+
   const [assets, goals] = await Promise.all([
-    prisma.asset.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
-    }),
-    prisma.financialGoal.findMany({
-      where: { userId: session.user.id },
-      orderBy: { deadline: 'asc' }
-    })
+    Asset.find({ userId: session.user.id }).sort({ createdAt: -1 }).lean(),
+    FinancialGoal.find({ userId: session.user.id }).sort({ deadline: 1 }).lean(),
   ]);
 
   // Calculate portfolio analytics
-  const portfolioData = assets.map(asset => ({
-    id: asset.id,
+  const portfolioData = assets.map((asset) => ({
+    id: asset._id.toString(),
     category: asset.category,
     name: asset.name,
-    investedAmount: asset.investedAmount || asset.value, // Fallback to value if not set
-    currentValue: asset.value
+    investedAmount: asset.investedAmount ?? asset.value,
+    currentValue: asset.value,
   }));
 
   const analytics = analyzePortfolio(portfolioData);
+
+  // Serialize goals for client components
+  const serializedGoals = goals.map((g) => ({
+    ...g,
+    _id: g._id.toString(),
+    id: g._id.toString(),
+    deadline: g.deadline ? new Date(g.deadline).toISOString() : null,
+    createdAt: (g.createdAt ? new Date(g.createdAt) : new Date()).toISOString(),
+    updatedAt: (g.updatedAt ? new Date(g.updatedAt) : new Date()).toISOString(),
+  }));
 
   return (
     <div className="space-y-6">
@@ -62,7 +69,7 @@ export default async function InvestmentsPage() {
         </div>
       </div>
       <div className="mt-6">
-        <GoalInvestmentPlanner goals={goals} />
+        <GoalInvestmentPlanner goals={serializedGoals as Parameters<typeof GoalInvestmentPlanner>[0]['goals']} />
       </div>
     </div>
   );

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { calculateRequiredMonthlyContribution, calculateMonthsRemaining } from '@/lib/financial-engine';
-import { FinancialGoal } from '@prisma/client';
 import { Target, TrendingUp, ShieldAlert, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -12,8 +11,16 @@ import { useCurrency } from '@/components/providers/currency-provider';
 import { formatCurrency } from '@/lib/financial-engine';
 import { motion } from 'motion/react';
 
+interface GoalShape {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string | Date | null;
+}
+
 interface GoalInvestmentPlannerProps {
-  goals: FinancialGoal[];
+  goals: GoalShape[];
 }
 
 export function GoalInvestmentPlanner({ goals }: GoalInvestmentPlannerProps) {
@@ -42,16 +49,17 @@ export function GoalInvestmentPlanner({ goals }: GoalInvestmentPlannerProps) {
   }
 
   const selectedGoal = activeGoals.find(g => g.id === selectedGoalId) || activeGoals[0];
-  const monthsRemaining = selectedGoal.deadline ? calculateMonthsRemaining(new Date(selectedGoal.deadline)) : 0;
+  const goalDeadlineDate = selectedGoal.deadline ? new Date(selectedGoal.deadline) : null;
+  const monthsRemaining = goalDeadlineDate ? calculateMonthsRemaining(goalDeadlineDate) : 0;
   
   // Calculate scenarios
   // Conservative: 6%
   // Moderate: 10%
   // Aggressive: 14%
-  const conservativeReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, selectedGoal.deadline, 6) || 0;
-  const moderateReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, selectedGoal.deadline, 10) || 0;
-  const aggressiveReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, selectedGoal.deadline, 14) || 0;
-  const zeroReturnReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, selectedGoal.deadline, 0) || 0;
+  const conservativeReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, goalDeadlineDate, 6) || 0;
+  const moderateReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, goalDeadlineDate, 10) || 0;
+  const aggressiveReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, goalDeadlineDate, 14) || 0;
+  const zeroReturnReq = calculateRequiredMonthlyContribution(selectedGoal.currentAmount, selectedGoal.targetAmount, goalDeadlineDate, 0) || 0;
 
   return (
     <motion.div 

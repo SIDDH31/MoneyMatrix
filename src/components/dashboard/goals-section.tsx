@@ -14,7 +14,7 @@ interface Goal {
   name: string;
   targetAmount: number;
   currentAmount: number;
-  deadline: Date | null;
+  deadline?: string | Date | null;
   priority: string;
   status: string;
 }

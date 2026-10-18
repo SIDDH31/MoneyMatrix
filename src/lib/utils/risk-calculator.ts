@@ -1,4 +1,4 @@
-import { RiskTolerance } from '@prisma/client';
+import type { RiskTolerance } from '@/lib/models';
 import { riskQuizSchema } from '../validations/onboarding';
 import * as z from 'zod';
 
@@ -33,7 +33,7 @@ export function calculateRiskScore(answers: QuizData): { score: number; toleranc
 
   // Total possible score: 12. Min score: 3.
   let tolerance: RiskTolerance = 'MODERATE';
-  
+
   if (score <= 4) tolerance = 'CONSERVATIVE';
   else if (score <= 6) tolerance = 'MODERATELY_CONSERVATIVE';
   else if (score <= 8) tolerance = 'MODERATE';

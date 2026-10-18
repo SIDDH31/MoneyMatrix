@@ -1,22 +1,15 @@
 version: "3.9"
 
 services:
-  db:
-    image: postgres:16-alpine
+  mongodb:
+    image: mongo:7-jammy
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: moneymatrix
-      POSTGRES_PASSWORD: moneymatrix_dev
-      POSTGRES_DB: moneymatrix
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: moneymatrix
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U moneymatrix"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb_data:/data/db
 
 volumes:
-  postgres_data:
+  mongodb_data:

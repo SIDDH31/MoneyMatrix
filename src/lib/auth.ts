@@ -1,34 +1,52 @@
 import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from '@/lib/prisma';
+import { MongoDBAdapter } from '@auth/mongodb-adapter';
+import clientPromise from '@/lib/mongodb';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { loginSchema } from './validations/auth';
 import { authConfig } from './auth.config';
+import { connectDB } from '@/lib/mongoose';
+import mongoose from 'mongoose';
+
+async function getUserByEmail(email: string) {
+  await connectDB();
+  // Auth.js stores users in the 'users' collection via the adapter.
+  // We query it directly here for credential verification.
+  const db = mongoose.connection.db;
+  if (!db) return null;
+  return db.collection('users').findOne({ email });
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter: MongoDBAdapter(clientPromise, { databaseName: 'moneymatrix' }),
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
       async authorize(credentials) {
         const validatedFields = loginSchema.safeParse(credentials);
-        
+
         if (validatedFields.success) {
           const { email, password } = validatedFields.data;
-          
-          const user = await prisma.user.findUnique({ where: { email } });
+
+          const user = await getUserByEmail(email);
           if (!user || !user.password) return null;
-          
-          const passwordsMatch = await bcrypt.compare(password, user.password);
-          
-          if (passwordsMatch) return user;
+
+          const passwordsMatch = await bcrypt.compare(password, user.password as string);
+
+          if (passwordsMatch) {
+            return {
+              id: user._id.toString(),
+              name: user.name as string,
+              email: user.email as string,
+              image: (user.image as string) ?? null,
+            };
+          }
         }
-        
+
         return null;
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     ...authConfig.callbacks,
@@ -43,6 +61,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.sub = user.id;
       }
       return token;
-    }
-  }
+    },
+  },
 });

@@ -1,7 +1,8 @@
 import { OnboardingWizard } from '@/components/onboarding/wizard';
 import { Metadata } from 'next';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Profile } from '@/lib/models';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
@@ -11,15 +12,15 @@ export const metadata: Metadata = {
 
 export default async function OnboardingPage() {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     redirect('/login');
   }
 
+  await connectDB();
+
   // If user already has a profile, redirect to dashboard
-  const profile = await prisma.profile.findUnique({
-    where: { userId: session.user.id }
-  });
+  const profile = await Profile.findOne({ userId: session.user.id }).lean();
 
   if (profile) {
     redirect('/dashboard');
@@ -32,7 +33,7 @@ export default async function OnboardingPage() {
           <h1 className="text-3xl font-bold tracking-tight">Welcome to MoneyMatrix</h1>
           <p className="mt-2 text-muted-foreground">Let's set up your financial profile to get started.</p>
         </div>
-        
+
         <OnboardingWizard />
       </div>
     </div>

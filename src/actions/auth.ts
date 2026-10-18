@@ -2,10 +2,11 @@
 
 import * as z from 'zod';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
 import { loginSchema, registerSchema } from '@/lib/validations/auth';
 import { signIn } from '@/lib/auth';
 import { AuthError } from 'next-auth';
+import { connectDB } from '@/lib/mongoose';
+import mongoose from 'mongoose';
 
 export async function loginUser(values: z.infer<typeof loginSchema>) {
   const validatedFields = loginSchema.safeParse(values);
@@ -20,7 +21,7 @@ export async function loginUser(values: z.infer<typeof loginSchema>) {
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/dashboard', // Auth middleware redirects correctly if onboarding is needed
+      redirectTo: '/dashboard',
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -31,7 +32,7 @@ export async function loginUser(values: z.infer<typeof loginSchema>) {
           return { error: 'Something went wrong!' };
       }
     }
-    throw error; // Let Next.js handle redirect throws
+    throw error;
   }
 }
 
@@ -45,20 +46,24 @@ export async function registerUser(values: z.infer<typeof registerSchema>) {
   const { email, password, name } = validatedFields.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
+  await connectDB();
+  const db = mongoose.connection.db;
+  if (!db) return { error: 'Database unavailable.' };
 
+  const usersCollection = db.collection('users');
+
+  const existingUser = await usersCollection.findOne({ email });
   if (existingUser) {
     return { error: 'Email already in use!' };
   }
 
-  await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-    },
+  await usersCollection.insertOne({
+    name,
+    email,
+    password: hashedPassword,
+    emailVerified: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
   return { success: 'User created! Please log in.' };

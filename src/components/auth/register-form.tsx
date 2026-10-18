@@ -121,7 +121,8 @@ export function RegisterForm() {
             </div>
             
             {error && (
-              <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md flex items-center">
+              <div className="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-500/50 text-sm p-3 rounded-md flex items-center gap-x-2">
+                <Activity className="h-4 w-4" />
                 {error}
               </div>
             )}

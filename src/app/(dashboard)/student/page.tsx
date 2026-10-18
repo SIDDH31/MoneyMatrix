@@ -1,7 +1,9 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Profile, BankAccount, Asset, FinancialGoal, Budget } from '@/lib/models';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
+import mongoose from 'mongoose';
 
 import { DashboardHeader } from '@/components/dashboard/header';
 import { StudentOverview } from '@/components/dashboard/student/student-overview';
@@ -24,44 +26,68 @@ export default async function StudentDashboardPage() {
 
   const userId = session.user.id;
 
+  await connectDB();
+
   const [profile, bankAccounts, assets, goals, budgets] = await Promise.all([
-    prisma.profile.findUnique({
-      where: { userId },
-      include: { user: { select: { name: true } } },
-    }),
-    prisma.bankAccount.findMany({ where: { userId, isActive: true } }),
-    prisma.asset.findMany({ where: { userId } }),
-    prisma.financialGoal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
-    prisma.budget.findMany({ where: { userId, isActive: true } }),
+    Profile.findOne({ userId }).lean(),
+    BankAccount.find({ userId, isActive: true }).lean(),
+    Asset.find({ userId }).lean(),
+    FinancialGoal.find({ userId }).sort({ createdAt: -1 }).lean(),
+    Budget.find({ userId, isActive: true }).lean(),
   ]);
 
   if (!profile) {
     redirect('/onboarding');
   }
 
+  // Fetch user name from users collection
+  const db = mongoose.connection.db;
+  let userName: string | null = null;
+  if (db) {
+    try {
+      const userDoc = await db.collection('users').findOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { projection: { name: 1 } }
+      );
+      userName = (userDoc?.name as string) ?? null;
+    } catch {
+      // ignore
+    }
+  }
+
   const totalBankBalance = bankAccounts.reduce((sum, a) => sum + a.balance, 0);
-  const totalSavings = assets
-    .filter((a) => a.category === 'CASH_EQUIVALENT')
-    .reduce((sum, a) => sum + a.value, 0) + totalBankBalance;
+  const totalSavings =
+    assets
+      .filter((a) => a.category === 'CASH_EQUIVALENT')
+      .reduce((sum, a) => sum + a.value, 0) + totalBankBalance;
 
   const monthlyIncome = (profile.monthlyIncome ?? 0) + (profile.additionalIncome ?? 0);
   const monthlyExpenses = calculateTotalExpenses(budgets);
   const savingsRate = calculateSavingsRate(monthlyIncome, monthlyExpenses);
   const monthlySavingCapacity = Math.max(0, monthlyIncome - monthlyExpenses);
 
+  const serializedGoals = goals.map((g) => ({
+    ...g,
+    _id: g._id.toString(),
+    id: g._id.toString(),
+    deadline: g.deadline ? new Date(g.deadline).toISOString() : null,
+    createdAt: (g.createdAt ? new Date(g.createdAt) : new Date()).toISOString(),
+    updatedAt: (g.updatedAt ? new Date(g.updatedAt) : new Date()).toISOString(),
+  }));
+
   return (
     <div className="space-y-6">
-      <DashboardHeader userName={profile.user.name} />
+      <DashboardHeader userName={userName} />
 
-      <StudentOverview 
-        monthlyIncome={monthlyIncome} 
-        monthlyExpenses={monthlyExpenses} 
-        totalSavings={totalSavings} 
-        savingsRate={savingsRate} 
+      <StudentOverview
+        monthlyIncome={monthlyIncome}
+        monthlyExpenses={monthlyExpenses}
+        totalSavings={totalSavings}
+        savingsRate={savingsRate}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <GoalsSection goals={goals} monthlySavingCapacity={monthlySavingCapacity} />
+        <GoalsSection goals={serializedGoals as Parameters<typeof GoalsSection>[0]['goals']} monthlySavingCapacity={monthlySavingCapacity} />
         <EducationCards savingsRate={savingsRate} monthlyExpenses={monthlyExpenses} monthlyIncome={monthlyIncome} />
       </div>
     </div>

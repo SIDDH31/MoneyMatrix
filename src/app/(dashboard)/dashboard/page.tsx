@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Profile, BankAccount, Asset, Liability, FinancialGoal, Budget, RiskProfile, AIInsight } from '@/lib/models';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 
@@ -12,12 +13,12 @@ import { HealthScoreDisplay } from '@/components/dashboard/health-score';
 import { GoalsSection } from '@/components/dashboard/goals-section';
 import { AIInsights } from '@/components/dashboard/ai-insights';
 
-import { calculateHealthScore } from '@/lib/financial-engine';
 import {
-  calculateNetWorth,
+  calculateHealthScore,
   calculateTotalExpenses,
   calculateSavingsRate,
 } from '@/lib/financial-engine';
+import mongoose from 'mongoose';
 
 export const metadata: Metadata = {
   title: 'Dashboard | MoneyMatrix',
@@ -30,25 +31,41 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
+  await connectDB();
+
   // Fetch all data in parallel
   const [profile, bankAccounts, assets, liabilities, goals, budgets, riskProfile, aiInsights] =
     await Promise.all([
-      prisma.profile.findUnique({
-        where: { userId },
-        include: { user: { select: { name: true, email: true, createdAt: true } } },
-      }),
-      prisma.bankAccount.findMany({ where: { userId, isActive: true } }),
-      prisma.asset.findMany({ where: { userId } }),
-      prisma.liability.findMany({ where: { userId } }),
-      prisma.financialGoal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
-      prisma.budget.findMany({ where: { userId, isActive: true } }),
-      prisma.riskProfile.findUnique({ where: { userId } }),
-      prisma.aIInsight.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 5 }),
+      Profile.findOne({ userId })
+        .populate({ path: 'user', model: 'User', localField: 'userId', foreignField: '_id', justOne: true })
+        .lean(),
+      BankAccount.find({ userId, isActive: true }).lean(),
+      Asset.find({ userId }).lean(),
+      Liability.find({ userId }).lean(),
+      FinancialGoal.find({ userId }).sort({ createdAt: -1 }).lean(),
+      Budget.find({ userId, isActive: true }).lean(),
+      RiskProfile.findOne({ userId }).lean(),
+      AIInsight.find({ userId }).sort({ createdAt: -1 }).limit(5).lean(),
     ]);
 
   // If no profile, redirect to onboarding
   if (!profile) {
     redirect('/onboarding');
+  }
+
+  // Fetch user name separately (Auth.js stores in 'users' collection)
+  const db = mongoose.connection.db;
+  let userName: string | null = null;
+  if (db) {
+    try {
+      const userDoc = await db.collection('users').findOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { projection: { name: 1 } }
+      );
+      userName = (userDoc?.name as string) ?? null;
+    } catch {
+      // userId may not be an ObjectId in some adapter versions
+    }
   }
 
   // ─── Compute derived values ───────────────────────────
@@ -90,10 +107,27 @@ export default async function DashboardPage() {
     limit: b.limit,
   }));
 
+  // Serialize Mongoose docs for passing to Client Components
+  const serializedGoals = goals.map((g) => ({
+    ...g,
+    _id: g._id.toString(),
+    id: g._id.toString(),
+    deadline: g.deadline ? new Date(g.deadline).toISOString() : null,
+    createdAt: (g.createdAt ? new Date(g.createdAt) : new Date()).toISOString(),
+    updatedAt: (g.updatedAt ? new Date(g.updatedAt) : new Date()).toISOString(),
+  }));
+
+  const serializedAiInsights = aiInsights.map((i) => ({
+    ...i,
+    _id: i._id.toString(),
+    id: i._id.toString(),
+    createdAt: (i.createdAt ? new Date(i.createdAt) : new Date()).toISOString(),
+  }));
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <DashboardHeader userName={profile.user.name} />
+      <DashboardHeader userName={userName} />
 
       {/* Overview Cards */}
       <OverviewCards
@@ -127,9 +161,9 @@ export default async function DashboardPage() {
 
       {/* Goals & Insights Row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <GoalsSection goals={goals} monthlySavingCapacity={monthlySavingCapacity} />
+        <GoalsSection goals={serializedGoals as Parameters<typeof GoalsSection>[0]['goals']} monthlySavingCapacity={monthlySavingCapacity} />
         <AIInsights
-          dbInsights={aiInsights}
+          dbInsights={serializedAiInsights as Parameters<typeof AIInsights>[0]['dbInsights']}
           financialContext={{
             savingsRate,
             monthlyIncome,

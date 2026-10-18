@@ -15,7 +15,7 @@ interface AIInsight {
   title: string;
   content: string;
   isRead: boolean;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 interface AIInsightsProps {

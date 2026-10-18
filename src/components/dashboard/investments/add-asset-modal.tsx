@@ -7,9 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2 } from 'lucide-react';
-import { AssetCategory } from '@prisma/client';
 import { addAsset } from '@/actions/investments';
 import { useCurrency } from '@/components/providers/currency-provider';
+
+const ASSET_CATEGORIES = [
+  'CASH_EQUIVALENT',
+  'INVESTMENT',
+  'PROPERTY',
+  'VEHICLE',
+  'ELECTRONICS',
+  'JEWELRY',
+  'OTHER',
+] as const;
+type AssetCategoryValue = (typeof ASSET_CATEGORIES)[number];
 
 export function AddAssetModal() {
   const { currency } = useCurrency();
@@ -49,12 +59,12 @@ export function AddAssetModal() {
           
           <div className="space-y-2">
             <Label htmlFor="category">Asset Category</Label>
-            <Select name="category" required defaultValue={AssetCategory.INVESTMENT}>
+            <Select name="category" required defaultValue="INVESTMENT">
               <SelectTrigger>
                 <SelectValue placeholder="Select asset category" />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(AssetCategory).map((category) => (
+                {ASSET_CATEGORIES.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category.replace(/_/g, ' ')}
                   </SelectItem>

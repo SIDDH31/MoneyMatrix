@@ -1,5 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GoogleGenerativeAIStream, StreamingTextResponse } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { streamText } from 'ai';
 import { auth } from '@/lib/auth';
 import { buildFinancialContext } from '@/lib/ai/financial-context';
 
@@ -17,7 +17,10 @@ You are the AI Financial Advisor for MoneyMatrix. Your role is to help the user 
 6. Do not include sensitive information like full account numbers in your output.
 `;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const nvidia = createOpenAI({
+  baseURL: 'https://integrate.api.nvidia.com/v1',
+  apiKey: process.env.NVIDIA_API_KEY || '',
+});
 
 export async function POST(req: Request) {
   try {
@@ -30,15 +33,13 @@ export async function POST(req: Request) {
 
     const financialContext = await buildFinancialContext(session.user.id);
 
-    // Build the prompt by injecting the system prompt and context as the first message
-    // Gemini 1.5 expects systemInstructions in the model configuration, but we can also prepend it to the conversation history.
-    const prompt = `${SYSTEM_PROMPT}\n\n${financialContext}\n\nUser Question: ${messages[messages.length - 1].content}`;
+    const result = await streamText({
+      model: nvidia('meta/llama-3.1-70b-instruct') as any,
+      system: `${SYSTEM_PROMPT}\n\nUSER FINANCIAL CONTEXT:\n${financialContext}`,
+      messages,
+    });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const responseStream = await model.generateContentStream(prompt);
-    const stream = GoogleGenerativeAIStream(responseStream);
-
-    return new StreamingTextResponse(stream);
+    return result.toAIStreamResponse();
   } catch (error) {
     console.error('Error in chat route:', error);
     return new Response('Internal Server Error', { status: 500 });

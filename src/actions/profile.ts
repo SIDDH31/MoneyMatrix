@@ -1,7 +1,8 @@
 'use server';
 
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Profile } from '@/lib/models';
 import { revalidatePath } from 'next/cache';
 
 export async function toggleStudentMode(enabled: boolean) {
@@ -11,13 +12,16 @@ export async function toggleStudentMode(enabled: boolean) {
       return { error: 'Unauthorized' };
     }
 
-    await prisma.profile.update({
-      where: { userId: session.user.id },
-      data: { studentMode: enabled },
-    });
+    await connectDB();
+
+    await Profile.findOneAndUpdate(
+      { userId: session.user.id },
+      { studentMode: enabled },
+      { new: true }
+    );
 
     revalidatePath('/', 'layout');
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error toggling student mode:', error);
@@ -32,13 +36,16 @@ export async function updateCurrencyPreference(currency: string) {
       return { error: 'Unauthorized' };
     }
 
-    await prisma.profile.update({
-      where: { userId: session.user.id },
-      data: { currency },
-    });
+    await connectDB();
+
+    await Profile.findOneAndUpdate(
+      { userId: session.user.id },
+      { currency },
+      { new: true }
+    );
 
     revalidatePath('/', 'layout');
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error updating currency:', error);

@@ -1,9 +1,20 @@
 'use server';
 
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { connectDB } from '@/lib/mongoose';
+import { Asset } from '@/lib/models';
+import type { AssetCategory } from '@/lib/models';
 import { revalidatePath } from 'next/cache';
-import { AssetCategory } from '@prisma/client';
+
+const VALID_CATEGORIES: AssetCategory[] = [
+  'CASH_EQUIVALENT',
+  'INVESTMENT',
+  'PROPERTY',
+  'VEHICLE',
+  'ELECTRONICS',
+  'JEWELRY',
+  'OTHER',
+];
 
 export async function addAsset(formData: FormData) {
   try {
@@ -17,18 +28,24 @@ export async function addAsset(formData: FormData) {
     const investedAmount = parseFloat(formData.get('investedAmount') as string);
     const currentValue = parseFloat(formData.get('currentValue') as string);
 
-    if (!category || !name || isNaN(investedAmount) || isNaN(currentValue)) {
+    if (
+      !category ||
+      !VALID_CATEGORIES.includes(category) ||
+      !name ||
+      isNaN(investedAmount) ||
+      isNaN(currentValue)
+    ) {
       return { error: 'Invalid input data.' };
     }
 
-    await prisma.asset.create({
-      data: {
-        userId: session.user.id,
-        category,
-        name,
-        investedAmount,
-        value: currentValue,
-      }
+    await connectDB();
+
+    await Asset.create({
+      userId: session.user.id,
+      category,
+      name,
+      investedAmount,
+      value: currentValue,
     });
 
     revalidatePath('/investments');
