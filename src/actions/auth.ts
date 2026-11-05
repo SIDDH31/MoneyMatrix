@@ -44,6 +44,7 @@ export async function registerUser(values: z.infer<typeof registerSchema>) {
   }
 
   const { email, password, name } = validatedFields.data;
+  const cleanEmail = email.trim().toLowerCase();
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await connectDB();
@@ -52,14 +53,16 @@ export async function registerUser(values: z.infer<typeof registerSchema>) {
 
   const usersCollection = db.collection('users');
 
-  const existingUser = await usersCollection.findOne({ email });
+  const existingUser = await usersCollection.findOne({
+    $or: [{ email: cleanEmail }, { email: email.trim() }],
+  });
   if (existingUser) {
     return { error: 'Email already in use!' };
   }
 
   await usersCollection.insertOne({
     name,
-    email,
+    email: cleanEmail,
     password: hashedPassword,
     emailVerified: null,
     createdAt: new Date(),

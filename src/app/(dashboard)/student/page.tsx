@@ -63,6 +63,11 @@ export default async function StudentDashboardPage() {
 
   const monthlyIncome = (profile.monthlyIncome ?? 0) + (profile.additionalIncome ?? 0);
   const monthlyExpenses = calculateTotalExpenses(budgets);
+  // "Wants" categories from onboarding, used for the student insight
+  const NON_ESSENTIAL = ['Subscriptions', 'Entertainment'];
+  const nonEssentialExpenses = budgets
+    .filter((b) => NON_ESSENTIAL.includes(b.category))
+    .reduce((sum, b) => sum + (b.limit ?? 0), 0);
   const savingsRate = calculateSavingsRate(monthlyIncome, monthlyExpenses);
   const monthlySavingCapacity = Math.max(0, monthlyIncome - monthlyExpenses);
 
@@ -88,7 +93,7 @@ export default async function StudentDashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <GoalsSection goals={serializedGoals as Parameters<typeof GoalsSection>[0]['goals']} monthlySavingCapacity={monthlySavingCapacity} />
-        <EducationCards savingsRate={savingsRate} monthlyExpenses={monthlyExpenses} monthlyIncome={monthlyIncome} />
+        <EducationCards savingsRate={savingsRate} monthlyExpenses={monthlyExpenses} monthlyIncome={monthlyIncome} nonEssentialExpenses={nonEssentialExpenses} />
       </div>
     </div>
   );

@@ -9,10 +9,21 @@ import { motion } from 'motion/react';
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
+/** Human-readable names for asset categories stored in the database. */
+const CATEGORY_LABELS: Record<string, string> = {
+  CASH_EQUIVALENT: 'Cash & Savings',
+  INVESTMENT: 'Investments',
+  PROPERTY: 'Property',
+  VEHICLE: 'Vehicles',
+  ELECTRONICS: 'Electronics',
+  JEWELRY: 'Jewellery',
+  OTHER: 'Other',
+};
+
 export function AssetAllocation({ analytics }: { analytics: PortfolioSummary }) {
   const { currency } = useCurrency();
   const data = analytics.allocations.map((a, index) => ({
-    name: a.category,
+    name: CATEGORY_LABELS[a.category] ?? a.category,
     value: a.value,
     percentage: a.weightPercentage,
     color: COLORS[index % COLORS.length]

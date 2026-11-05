@@ -53,7 +53,7 @@ export function NetWorthChart({
       >
         <h3 className="text-base font-medium mb-2">Net Worth Breakdown</h3>
         <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-          No financial data yet. Complete onboarding to see your net worth.
+          No assets or debts recorded yet. Add investments or savings from the Investments page to see your net worth.
         </div>
       </motion.div>
     );

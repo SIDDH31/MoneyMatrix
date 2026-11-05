@@ -24,7 +24,7 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
+      const isOnDashboard = ['/dashboard', '/investments', '/student'].some((p) => nextUrl.pathname.startsWith(p));
       const isOnboarding = nextUrl.pathname.startsWith('/onboarding');
       const isAuthRoute = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/register');
 

@@ -1,10 +1,9 @@
 'use client';
 
-import { useChat } from 'ai/react';
-import { Bot, User, Send, Trash2, AlertCircle } from 'lucide-react';
+import { Bot, User, Send, Trash2, AlertCircle, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 
@@ -15,29 +14,105 @@ const SUGGESTED_QUESTIONS = [
   "When will I reach my emergency fund goal?",
 ];
 
-export function ChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading, error } = useChat({
-    api: '/api/chat',
-  });
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
 
+let idCounter = 0;
+const newId = () => `${Date.now()}-${idCounter++}`;
+
+export function ChatInterface() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom as tokens stream in
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const clearChat = () => setMessages([]);
+  // Abort any in-flight request when the panel unmounts
+  useEffect(() => () => abortRef.current?.abort(), []);
 
-  const handleSuggestedClick = (q: string) => {
-    // Manually trigger submit with suggested question
-    handleInputChange({ target: { value: q } } as any);
-    // Use timeout to allow state to update before submitting
-    setTimeout(() => {
-      const form = document.getElementById('chat-form');
-      if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    }, 10);
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const content = text.trim();
+      if (!content || isLoading) return;
+
+      const userMessage: Message = { id: newId(), role: 'user', content };
+      const assistantId = newId();
+      const history = [...messages, userMessage];
+
+      setMessages([...history, { id: assistantId, role: 'assistant', content: '' }]);
+      setInput('');
+      setError(null);
+      setIsLoading(true);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: history.map(({ role, content }) => ({ role, content })),
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? 'Failed to get a response. Please try again.');
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let reply = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          reply += decoder.decode(value, { stream: true });
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)));
+        }
+
+        if (!reply.trim()) {
+          throw new Error('The AI returned an empty response. Please try again.');
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          // User pressed stop: keep whatever streamed so far, drop an empty bubble
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId || m.content));
+        } else {
+          setError((err as Error).message);
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId || m.content));
+        }
+      } finally {
+        setIsLoading(false);
+        abortRef.current = null;
+      }
+    },
+    [isLoading, messages]
+  );
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void sendMessage(input);
   };
+
+  const clearChat = () => {
+    abortRef.current?.abort();
+    setMessages([]);
+    setError(null);
+  };
+
+  const lastMessage = messages[messages.length - 1];
+  const waitingForFirstToken = isLoading && lastMessage?.role === 'assistant' && !lastMessage.content;
 
   return (
     <div className="flex flex-col h-[600px] w-full max-w-md mx-auto bg-card border rounded-xl overflow-hidden shadow-sm">
@@ -59,7 +134,7 @@ export function ChatInterface() {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
             <div className="bg-primary/5 p-4 rounded-full">
               <Bot className="w-8 h-8 text-primary" />
@@ -75,7 +150,7 @@ export function ChatInterface() {
                 <button
                   key={q}
                   type="button"
-                  onClick={() => handleSuggestedClick(q)}
+                  onClick={() => void sendMessage(q)}
                   className="text-xs bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground px-3 py-1.5 rounded-full transition-colors border text-left"
                 >
                   {q}
@@ -85,36 +160,35 @@ export function ChatInterface() {
           </div>
         ) : (
           <>
-            {messages.map((m: any) => (
-              <div
-                key={m.id}
-                className={cn(
-                  "flex gap-3 max-w-[85%]",
-                  m.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                )}
-              >
-                <div className={cn(
-                  "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                  m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                )}>
-                  {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+            {messages
+              .filter((m) => m.content)
+              .map((m) => (
+                <div
+                  key={m.id}
+                  className={cn('flex gap-3 max-w-[85%]', m.role === 'user' ? 'ml-auto flex-row-reverse' : '')}
+                >
+                  <div
+                    className={cn(
+                      'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                      m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                    )}
+                  >
+                    {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                  </div>
+                  <div
+                    className={cn(
+                      'rounded-2xl px-4 py-3 text-sm',
+                      m.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-tr-none'
+                        : 'bg-muted text-foreground rounded-tl-none prose prose-sm dark:prose-invert'
+                    )}
+                  >
+                    {m.role === 'user' ? m.content : <ReactMarkdown>{m.content}</ReactMarkdown>}
+                  </div>
                 </div>
-                <div className={cn(
-                  "rounded-2xl px-4 py-3 text-sm",
-                  m.role === 'user' 
-                    ? "bg-primary text-primary-foreground rounded-tr-none" 
-                    : "bg-muted text-foreground rounded-tl-none prose prose-sm dark:prose-invert"
-                )}>
-                  {m.role === 'user' ? (
-                    m.content
-                  ) : (
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {isLoading && (
+              ))}
+
+            {waitingForFirstToken && (
               <div className="flex gap-3 max-w-[85%]">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                   <Bot className="w-4 h-4" />
@@ -126,11 +200,11 @@ export function ChatInterface() {
                 </div>
               </div>
             )}
-            
+
             {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg mt-4">
-                <AlertCircle className="w-4 h-4" />
-                <p>Failed to get response. Please try again.</p>
+              <div role="alert" className="flex items-start gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg mt-4">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p>{error}</p>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -140,22 +214,31 @@ export function ChatInterface() {
 
       {/* Input Area */}
       <div className="p-4 bg-background border-t">
-        <form id="chat-form" onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your finances..."
             className="flex-1 rounded-full px-4"
             disabled={isLoading}
+            maxLength={4000}
           />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="rounded-full shrink-0"
-            disabled={isLoading || !input.trim()}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          {isLoading ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              className="rounded-full shrink-0"
+              onClick={() => abortRef.current?.abort()}
+              title="Stop generating"
+            >
+              <Square className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={!input.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          )}
         </form>
         <p className="text-[10px] text-muted-foreground text-center mt-3">
           AI advice is informational and not licensed financial advice.

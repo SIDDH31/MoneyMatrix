@@ -94,8 +94,8 @@ export function GoalsSection({ goals, monthlySavingCapacity }: GoalsSectionProps
             : null;
 
           const projected = calculateProjectedCompletion(
-            goal.targetAmount,
             goal.currentAmount,
+            goal.targetAmount,
             monthlySavingCapacity
           );
 

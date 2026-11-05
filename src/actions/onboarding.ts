@@ -35,9 +35,14 @@ export async function submitOnboarding(data: OnboardingData) {
 
   const { tolerance } = calculateRiskScore(riskQuiz);
 
-  try {
-    await connectDB();
+  await connectDB();
 
+  // Already onboarded (e.g. double-submit or back button): don't try to create a second profile
+  if (await Profile.exists({ userId })) {
+    redirect('/dashboard');
+  }
+
+  try {
     // 1. Create Profile
     await Profile.create({
       userId,

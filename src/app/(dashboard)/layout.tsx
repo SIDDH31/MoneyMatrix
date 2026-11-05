@@ -45,7 +45,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           studentMode={profile?.studentMode ?? false}
         />
         <main className="flex-1 lg:ml-0 overflow-y-auto">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full">
+          {/* Top padding clears the mobile menu button; bottom padding keeps content above the floating AI Advisor button */}
+          <div className="px-4 pt-16 pb-28 sm:px-6 lg:p-8 lg:pb-28 max-w-[1400px] mx-auto min-h-full">
             <PageTransition>
               {children}
             </PageTransition>

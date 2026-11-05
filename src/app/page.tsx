@@ -6,6 +6,10 @@ import { HowItWorks } from '@/components/home/how-it-works';
 import { DashboardPreview } from '@/components/home/dashboard-preview';
 import { AiAdvisor } from '@/components/home/ai-advisor';
 import { StudentMode } from '@/components/home/student-mode';
+import { MarketNews } from '@/components/home/market-news';
+
+// Re-render at most every 15 minutes so the headlines stay fresh
+export const revalidate = 900;
 
 export default function Home() {
   return (
@@ -19,6 +23,7 @@ export default function Home() {
         <HowItWorks />
         <AiAdvisor />
         <StudentMode />
+        <MarketNews />
       </main>
       
       <Footer />

@@ -12,6 +12,9 @@ import { ExpenseAnalysis } from '@/components/dashboard/expense-analysis';
 import { HealthScoreDisplay } from '@/components/dashboard/health-score';
 import { GoalsSection } from '@/components/dashboard/goals-section';
 import { AIInsights } from '@/components/dashboard/ai-insights';
+import { NewsFeed } from '@/components/dashboard/news/news-feed';
+import { getLatestNews } from '@/lib/news';
+import Link from 'next/link';
 
 import {
   calculateHealthScore,
@@ -36,9 +39,7 @@ export default async function DashboardPage() {
   // Fetch all data in parallel
   const [profile, bankAccounts, assets, liabilities, goals, budgets, riskProfile, aiInsights] =
     await Promise.all([
-      Profile.findOne({ userId })
-        .populate({ path: 'user', model: 'User', localField: 'userId', foreignField: '_id', justOne: true })
-        .lean(),
+      Profile.findOne({ userId }).lean(),
       BankAccount.find({ userId, isActive: true }).lean(),
       Asset.find({ userId }).lean(),
       Liability.find({ userId }).lean(),
@@ -124,6 +125,9 @@ export default async function DashboardPage() {
     createdAt: (i.createdAt ? new Date(i.createdAt) : new Date()).toISOString(),
   }));
 
+  // Cached for 15 minutes; an empty result just hides the card
+  const news = await getLatestNews({ limit: 5 });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -174,6 +178,17 @@ export default async function DashboardPage() {
           }}
         />
       </div>
+
+      {/* Market headlines */}
+      {news.items.length > 0 && (
+        <section className="rounded-xl border bg-card/70 backdrop-blur-md px-5 pt-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Market headlines</h2>
+            <Link href="/dashboard/news" className="text-sm font-medium text-primary hover:underline">See all</Link>
+          </div>
+          <NewsFeed items={news.items} compact />
+        </section>
+      )}
     </div>
   );
 }

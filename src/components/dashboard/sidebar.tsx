@@ -11,16 +11,12 @@ import {
   Activity,
   Menu,
   X,
+  Newspaper,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/goals', label: 'Goals', icon: Target, comingSoon: true },
-  { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight, comingSoon: true },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings, comingSoon: true },
-];
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 
 interface SidebarProps {
   userName: string | null;
@@ -51,17 +47,21 @@ export function Sidebar({ userName, userEmail, studentMode }: SidebarProps) {
     }
   };
 
-  const currentNavItems = studentMode 
+  const currentNavItems: NavItem[] = studentMode
     ? [
         { href: '/student', label: 'Overview', icon: LayoutDashboard },
-        { href: '/dashboard/goals', label: 'Goals', icon: Target, comingSoon: true },
+        { href: '/dashboard/goals', label: 'Goals', icon: Target },
+        { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
+        { href: '/dashboard/news', label: 'Market News', icon: Newspaper },
+        { href: '/dashboard/settings', label: 'Settings', icon: Settings },
       ]
     : [
         { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
         { href: '/investments', label: 'Investments', icon: Briefcase },
-        { href: '/dashboard/goals', label: 'Goals', icon: Target, comingSoon: true },
-        { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight, comingSoon: true },
-        { href: '/dashboard/settings', label: 'Settings', icon: Settings, comingSoon: true },
+        { href: '/dashboard/goals', label: 'Goals', icon: Target },
+        { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
+        { href: '/dashboard/news', label: 'Market News', icon: Newspaper },
+        { href: '/dashboard/settings', label: 'Settings', icon: Settings },
       ];
 
   return (
@@ -108,23 +108,17 @@ export function Sidebar({ userName, userEmail, studentMode }: SidebarProps) {
             return (
               <Link
                 key={item.href}
-                href={item.comingSoon ? '#' : item.href}
+                href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  item.comingSoon && 'opacity-50 cursor-not-allowed'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <Icon className="h-4 w-4" />
                 <span>{item.label}</span>
-                {item.comingSoon && (
-                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                    Soon
-                  </span>
-                )}
               </Link>
             );
           })}

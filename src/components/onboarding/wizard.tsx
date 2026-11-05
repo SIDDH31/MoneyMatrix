@@ -149,7 +149,7 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="income.incomeType" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>Primary Income Source</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select items={{SALARY: 'Salary', FREELANCE: 'Freelance / Contract', STIPEND: 'Stipend', ALLOWANCE: 'Allowance', PART_TIME: 'Part-Time', OTHER: 'Other'}} onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Select income type" /></SelectTrigger>
                       </FormControl>
@@ -243,7 +243,7 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="riskQuiz.reactionToDrop" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>1. If your investment portfolio dropped 20% in a month, you would:</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select items={{sell_all: 'Sell everything to avoid further loss', sell_some: 'Sell some of it to feel safer', do_nothing: 'Do nothing and wait for it to recover', buy_more: "Buy more while it's cheap"}} onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select answer" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="sell_all">Sell everything to avoid further loss</SelectItem>
@@ -258,7 +258,7 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="riskQuiz.timeHorizon" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>2. When will you need to withdraw a significant portion of your investments?</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select items={{less_than_1: 'Less than 1 year', '1_to_3': '1 to 3 years', '3_to_7': '3 to 7 years', more_than_7: 'More than 7 years'}} onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select answer" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="less_than_1">Less than 1 year</SelectItem>
@@ -273,7 +273,7 @@ export function OnboardingWizard() {
                 <FormField control={form.control} name="riskQuiz.primaryObjective" render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>3. What is your primary investment objective?</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select items={{capital_preservation: 'Preserve my money (low risk)', income: 'Generate steady income', growth: 'Grow wealth over time (moderate risk)', speculation: 'Maximize returns (high risk)'}} onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select answer" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="capital_preservation">Preserve my money (low risk)</SelectItem>
@@ -305,11 +305,13 @@ export function OnboardingWizard() {
               </Button>
               
               {currentStep < STEPS.length - 1 ? (
-                <Button type="button" onClick={nextStep}>
+                // Distinct keys stop React reusing this button as the submit button mid-click,
+                // which used to submit the form when moving from step 5 to step 6.
+                <Button key="next" type="button" onClick={nextStep}>
                   Next <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isPending}>
+                <Button key="submit" type="submit" disabled={isPending}>
                   {isPending ? 'Saving...' : 'Complete Setup'} 
                   {!isPending && <CheckCircle2 className="ml-2 h-4 w-4" />}
                 </Button>

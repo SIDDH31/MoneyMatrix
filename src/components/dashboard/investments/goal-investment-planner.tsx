@@ -49,8 +49,18 @@ export function GoalInvestmentPlanner({ goals }: GoalInvestmentPlannerProps) {
   }
 
   const selectedGoal = activeGoals.find(g => g.id === selectedGoalId) || activeGoals[0];
-  const goalDeadlineDate = selectedGoal.deadline ? new Date(selectedGoal.deadline) : null;
-  const monthsRemaining = goalDeadlineDate ? calculateMonthsRemaining(goalDeadlineDate) : 0;
+  // Goals created during onboarding have no deadline; plan over a default 12 months instead of
+  // treating them as overdue.
+  const DEFAULT_HORIZON_MONTHS = 12;
+  const hasDeadline = Boolean(selectedGoal.deadline);
+  const goalDeadlineDate = hasDeadline
+    ? new Date(selectedGoal.deadline as string | Date)
+    : (() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + DEFAULT_HORIZON_MONTHS);
+        return d;
+      })();
+  const monthsRemaining = calculateMonthsRemaining(goalDeadlineDate);
   
   // Calculate scenarios
   // Conservative: 6%
@@ -77,7 +87,11 @@ export function GoalInvestmentPlanner({ goals }: GoalInvestmentPlannerProps) {
           <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
             <div className="space-y-2 flex-1">
               <label className="text-sm font-medium">Select Goal</label>
-              <Select value={selectedGoalId} onValueChange={(val: any) => setSelectedGoalId(val)}>
+              <Select
+                items={Object.fromEntries(activeGoals.map((g) => [g.id, g.name]))}
+                value={selectedGoal.id}
+                onValueChange={(val: any) => setSelectedGoalId(val)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a goal" />
                 </SelectTrigger>
@@ -95,6 +109,9 @@ export function GoalInvestmentPlanner({ goals }: GoalInvestmentPlannerProps) {
             <div className="bg-muted p-3 rounded-lg border flex-1 text-center sm:text-left">
               <p className="text-xs text-muted-foreground">Time Horizon</p>
               <p className="font-semibold">{monthsRemaining} months</p>
+              {!hasDeadline && (
+                <p className="text-[11px] text-muted-foreground">No target date set, so assuming 12 months</p>
+              )}
             </div>
           </div>
 

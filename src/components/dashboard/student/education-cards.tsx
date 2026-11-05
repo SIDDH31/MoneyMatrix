@@ -3,11 +3,13 @@ import { Lightbulb, ShieldAlert, TrendingUp } from 'lucide-react';
 
 interface EducationCardsProps {
   savingsRate: number;
+  /** Monthly spend on subscriptions and entertainment */
+  nonEssentialExpenses?: number;
   monthlyExpenses: number;
   monthlyIncome: number;
 }
 
-export function EducationCards({ savingsRate, monthlyExpenses, monthlyIncome }: EducationCardsProps) {
+export function EducationCards({ savingsRate, monthlyExpenses, monthlyIncome, nonEssentialExpenses = 0 }: EducationCardsProps) {
   
   // Calculate dynamic insights based on student logic
   let insightText = '';
@@ -19,9 +21,8 @@ export function EducationCards({ savingsRate, monthlyExpenses, monthlyIncome }: 
     insightText = "Great job! You have a healthy savings rate. Consider learning about low-risk investments to grow your wealth.";
   }
 
-  // Example insight as requested in prompt: "You're spending 28% of your monthly income on subscriptions"
-  // We'll simulate a dynamic text for the example
-  const examplePercentage = monthlyIncome > 0 ? ((monthlyExpenses * 0.3) / monthlyIncome * 100).toFixed(0) : '0';
+  // Real share of income going to subscriptions and entertainment
+  const nonEssentialPercentage = monthlyIncome > 0 ? Math.round((nonEssentialExpenses / monthlyIncome) * 100) : 0;
 
   return (
     <Card className="h-full flex flex-col">
@@ -37,7 +38,7 @@ export function EducationCards({ savingsRate, monthlyExpenses, monthlyIncome }: 
           <div>
             <h4 className="font-semibold text-sm mb-1">Your Personal Insight</h4>
             <p className="text-sm text-muted-foreground">
-              {insightText} For example, you might be spending ~{examplePercentage}% of your income on non-essentials.
+              {insightText}{nonEssentialExpenses > 0 && ` You're spending about ${nonEssentialPercentage}% of your income on subscriptions and entertainment.`}
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { connectDB } from '@/lib/mongoose';
-import { Asset, FinancialGoal } from '@/lib/models';
+import { Asset, FinancialGoal, Profile } from '@/lib/models';
 import { redirect } from 'next/navigation';
 import { analyzePortfolio } from '@/lib/financial-engine/portfolio-analytics';
 import { InvestmentOverview } from '@/components/dashboard/investments/investment-overview';
@@ -19,6 +19,10 @@ export default async function InvestmentsPage() {
   if (!session?.user?.id) redirect('/login');
 
   await connectDB();
+
+  if (!(await Profile.exists({ userId: session.user.id }))) {
+    redirect('/onboarding');
+  }
 
   const [assets, goals] = await Promise.all([
     Asset.find({ userId: session.user.id }).sort({ createdAt: -1 }).lean(),

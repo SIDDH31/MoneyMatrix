@@ -27,9 +27,12 @@ export function CashFlowChart({
   const { currency } = useCurrency();
   const monthlySavings = Math.max(0, monthlyIncome - monthlyExpenses);
 
-  // Generate simulated monthly data based on current values
-  // In production, this would come from transaction history
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  // Simulated monthly data based on the user's current monthly figures (there is no transaction history yet).
+  // Labelled as the last six months ending this month, and the subtitle says it's an estimate.
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, i) =>
+    new Date(now.getFullYear(), now.getMonth() - 5 + i, 1).toLocaleDateString('en-IN', { month: 'short' })
+  );
   const data = months.map((month, index) => {
     // Add slight variance for visual realism (deterministic based on index)
     const variance = 1 + (((index * 7 + 3) % 11) - 5) / 100; // ±5% variance
@@ -69,7 +72,7 @@ export function CashFlowChart({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-medium">Cash Flow</h3>
-          <p className="text-sm text-muted-foreground">Income vs Expenses vs Savings (Monthly)</p>
+          <p className="text-sm text-muted-foreground">Income vs Expenses vs Savings (estimated from your monthly figures)</p>
         </div>
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1">

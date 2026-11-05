@@ -29,11 +29,17 @@ export async function toggleStudentMode(enabled: boolean) {
   }
 }
 
+const SUPPORTED_CURRENCIES = ['INR', 'USD'] as const;
+
 export async function updateCurrencyPreference(currency: string) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return { error: 'Unauthorized' };
+    }
+
+    if (!(SUPPORTED_CURRENCIES as readonly string[]).includes(currency)) {
+      throw new Error(`Unsupported currency: ${currency}`);
     }
 
     await connectDB();

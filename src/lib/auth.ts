@@ -10,11 +10,16 @@ import mongoose from 'mongoose';
 
 async function getUserByEmail(email: string) {
   await connectDB();
-  // Auth.js stores users in the 'users' collection via the adapter.
-  // We query it directly here for credential verification.
   const db = mongoose.connection.db;
   if (!db) return null;
-  return db.collection('users').findOne({ email });
+  const cleanEmail = email.trim().toLowerCase();
+  return db.collection('users').findOne({
+    $or: [
+      { email: cleanEmail },
+      { email: email.trim() },
+      { email: { $regex: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+    ],
+  });
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

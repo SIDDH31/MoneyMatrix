@@ -13,10 +13,10 @@ export function Navbar() {
           <span className="font-bold tracking-tight text-xl">MoneyMatrix</span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="#features" className="transition-colors hover:text-foreground/80 text-foreground/60">Features</Link>
-          <Link href="#ai" className="transition-colors hover:text-foreground/80 text-foreground/60">AI Advisor</Link>
-          <Link href="#student" className="transition-colors hover:text-foreground/80 text-foreground/60">Student Mode</Link>
-          <Link href="#investments" className="transition-colors hover:text-foreground/80 text-foreground/60">Investments</Link>
+          <Link href="/#features" className="transition-colors hover:text-foreground/80 text-foreground/60">Features</Link>
+          <Link href="/#ai" className="transition-colors hover:text-foreground/80 text-foreground/60">AI Advisor</Link>
+          <Link href="/#student" className="transition-colors hover:text-foreground/80 text-foreground/60">Student Mode</Link>
+          <Link href="/#news" className="transition-colors hover:text-foreground/80 text-foreground/60">Market News</Link>
         </nav>
         <div className="flex items-center space-x-4">
           <Link href="/login" className="text-sm font-medium transition-colors hover:text-foreground/80">

@@ -24,7 +24,7 @@ export async function addAsset(formData: FormData) {
     }
 
     const category = formData.get('category') as AssetCategory;
-    const name = formData.get('name') as string;
+    const name = String(formData.get('name') ?? '').trim();
     const investedAmount = parseFloat(formData.get('investedAmount') as string);
     const currentValue = parseFloat(formData.get('currentValue') as string);
 
@@ -32,8 +32,11 @@ export async function addAsset(formData: FormData) {
       !category ||
       !VALID_CATEGORIES.includes(category) ||
       !name ||
-      isNaN(investedAmount) ||
-      isNaN(currentValue)
+      name.length > 100 ||
+      !Number.isFinite(investedAmount) ||
+      !Number.isFinite(currentValue) ||
+      investedAmount < 0 ||
+      currentValue < 0
     ) {
       return { error: 'Invalid input data.' };
     }
